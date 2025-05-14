@@ -32,16 +32,21 @@ function createColorPlane(color, width, height, position, rotation) {
 
 // Helper to create a video plane
 function createVideoPlane(videoId, width, height, position, rotation) {
-  const video = document.getElementById(videoId)
-  if (video) {
-    video.muted = true
-    video.autoplay = true
-    video.loop = true
-    video.playsInline = true
-    video.play().catch((e) => {
-      console.warn('Video play failed:', e)
-    })
-  }
+  const video = document.createElement('video')
+  video.crossOrigin = 'anonymous'
+  video.src = 'https://tg-3d-room.netlify.app/FF_PS_02_C_1.mp4'
+  video.autoplay = true
+  video.muted = true
+  video.loop = true
+  video.playsInline = true
+  video.style.display = 'none'
+  document.body.appendChild(video)
+
+  // Explicitly try to play the video
+  video.play().catch((e) => {
+    console.warn('Autoplay prevented:', e)
+  })
+
   const texture = new THREE.VideoTexture(video)
   const material = new THREE.MeshBasicMaterial({
     map: texture,
@@ -56,7 +61,7 @@ function createVideoPlane(videoId, width, height, position, rotation) {
 
 // Room dimensions
 const roomWidth = 4 // distance between left and right walls
-const wallHeight = 2.5
+const wallHeight = 1.5
 const roomDepth = 4 // distance from camera to front wall
 
 // Create two colored planes as side walls
