@@ -205,20 +205,23 @@ scene.add(cube)
 
 // --- OBJ + MTL Model Loader Example ---
 const mtlLoader = new MTLLoader()
-mtlLoader.setPath('models/') // Folder containing your .mtl and .obj
+mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
 
-mtlLoader.load('myModel.mtl', (materials) => {
+mtlLoader.load('FlyingFlea.mtl', (materials) => {
   materials.preload()
 
   const objLoader = new OBJLoader()
   objLoader.setMaterials(materials)
-  objLoader.setPath('models/')
+  objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
 
-  objLoader.load('myModel.obj', (object) => {
-    object.position.set(0, -(wallHeight / 2), -roomDepth / 2)
-    object.scale.set(1, 1, 1)
-    scene.add(object)
-  })
+  objLoader.load(
+    'https://tg-3d-room.netlify.app/FlyingFlea/FlyingFlea.obj',
+    (object) => {
+      object.position.set(0, -(wallHeight / 2), -roomDepth / 2)
+      object.scale.set(1, 1, 1)
+      scene.add(object)
+    }
+  )
 })
 
 // Enable shadows in renderer
