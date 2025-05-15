@@ -207,21 +207,19 @@ scene.add(cube)
 const mtlLoader = new MTLLoader()
 mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
 
-mtlLoader.load('FlyingFlea.mtl', (materials) => {
+mtlLoader.load('Flying_Flea.mtl', (materials) => {
   materials.preload()
 
   const objLoader = new OBJLoader()
   objLoader.setMaterials(materials)
   objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
 
-  objLoader.load(
-    'https://tg-3d-room.netlify.app/FlyingFlea/FlyingFlea.obj',
-    (object) => {
-      object.position.set(0, -(wallHeight / 2), -roomDepth / 2)
-      object.scale.set(1, 1, 1)
-      scene.add(object)
-    }
-  )
+  objLoader.load('Flying_Flea.obj', (object) => {
+    object.position.set(0, -(wallHeight / 2 - 0.3), -roomDepth / 2 - 1)
+    object.rotation.set(0, 100, 0)
+    object.scale.set(0.5, 0.5, 0.5)
+    scene.add(object)
+  })
 })
 
 // Enable shadows in renderer
