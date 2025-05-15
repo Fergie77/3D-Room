@@ -1,9 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { ReflectorForSSRPass } from 'three/examples/jsm/objects/ReflectorForSSRPass.js'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
-import { SSRPass } from 'three/examples/jsm/postprocessing/SSRPass.js'
+//import { ReflectorForSSRPass } from 'three/examples/jsm/objects/ReflectorForSSRPass.js'
+//import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
 // Create scene
 const scene = new THREE.Scene()
@@ -120,27 +118,55 @@ directionalLight.shadow.camera.near = 0.5
 directionalLight.shadow.camera.far = 20
 scene.add(directionalLight)
 
-// Add a floor using ReflectorForSSRPass
-const floorTexture = new THREE.TextureLoader().load('/public/RoughnessMap.jpg')
+// --- Cube Camera for dynamic reflection ---
+const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
+  format: THREE.RGBAFormat,
+  generateMipmaps: true,
+  minFilter: THREE.LinearMipmapLinearFilter,
+})
+const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
+scene.add(cubeCamera)
+
+// --- Floor Texture ---
+const floorTexture = new THREE.TextureLoader().load(
+  'https://tg-3d-room.netlify.app/RoughnessMap.jpg'
+)
 floorTexture.wrapS = THREE.RepeatWrapping
 floorTexture.wrapT = THREE.RepeatWrapping
-floorTexture.repeat.set(2, 2) // Adjust tiling as needed
+floorTexture.repeat.set(2, 2)
 
-const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth)
-const floor = new ReflectorForSSRPass(floorGeometry, {
-  clipBias: 1,
-  textureWidth: window.innerWidth,
-  textureHeight: window.innerHeight,
-  color: 0x000000,
-  useDepthTexture: true,
-  distanceAttenuation: true,
-  maxDistance: 0.001,
+const normalMap = new THREE.TextureLoader().load(
+  'https://tg-3d-room.netlify.app/NormalMap.jpg'
+)
+normalMap.wrapS = THREE.RepeatWrapping
+normalMap.wrapT = THREE.RepeatWrapping
+normalMap.repeat.set(2, 2)
+
+const roughnessMap = new THREE.TextureLoader().load(
+  'https://tg-3d-room.netlify.app/RoughnessMap.jpg'
+)
+roughnessMap.wrapS = THREE.RepeatWrapping
+roughnessMap.wrapT = THREE.RepeatWrapping
+roughnessMap.repeat.set(2, 2)
+
+// --- PBR Floor Material ---
+const floorMaterial = new THREE.MeshStandardMaterial({
   map: floorTexture,
+  metalness: 1,
+  roughness: 0.8,
+  envMap: cubeRenderTarget.texture,
+  envMapIntensity: 1.0,
+  normalMap: normalMap,
+  roughnessMap: roughnessMap,
 })
-floor.material.depthWrite = false
+
+// --- Floor Mesh ---
+const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth)
+const floor = new THREE.Mesh(floorGeometry, floorMaterial)
 floor.rotation.x = -Math.PI / 2
 floor.position.y = -(wallHeight / 2)
 floor.position.z = -roomDepth / 2
+floor.receiveShadow = true
 scene.add(floor)
 
 // Add a ceiling
@@ -178,45 +204,17 @@ scene.add(cube)
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-// Set up EffectComposer
-const composer = new EffectComposer(renderer)
-composer.addPass(new RenderPass(scene, camera))
-
-// Set up SSRPass
-const ssrPass = new SSRPass({
-  renderer,
-  scene,
-  camera,
-  width: window.innerWidth,
-  height: window.innerHeight,
-  groundReflector: floor,
-  distanceAttenuation: true,
-  selects: [floor],
-  thickness: 0.018,
-  maxDistance: 0.001,
-  //minDistance: 0.001,
-  blur: true,
-})
-composer.addPass(ssrPass)
-
-// After SSRPass and floor creation
-ssrPass.distanceAttenuation = true
-floor.distanceAttenuation = ssrPass.distanceAttenuation
-
-// Utility function to set maxDistance on both SSRPass and floor
-function setReflectionMaxDistance(value) {
-  ssrPass.maxDistance = value
-  floor.maxDistance = value
-}
-
-// Set initial maxDistance
-setReflectionMaxDistance(10) // You can change this value as needed
-
-// Animation loop
+// --- Animation Loop ---
 function animate() {
   requestAnimationFrame(animate)
   controls.update()
-  composer.render()
-}
 
+  // Update cube camera for dynamic reflection
+  floor.visible = false
+  cubeCamera.position.copy(floor.position)
+  cubeCamera.update(renderer, scene)
+  floor.visible = true
+
+  renderer.render(scene, camera)
+}
 animate()
