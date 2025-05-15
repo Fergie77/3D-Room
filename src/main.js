@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 //import { ReflectorForSSRPass } from 'three/examples/jsm/objects/ReflectorForSSRPass.js'
 //import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 
 // Create scene
 const scene = new THREE.Scene()
@@ -62,6 +64,7 @@ function createVideoPlaneFromSrc(videoSrc, width, height, position, rotation) {
   })
 
   const texture = new THREE.VideoTexture(video)
+  texture.encoding = THREE.sRGBEncoding
   const material = new THREE.MeshBasicMaterial({
     map: texture,
     side: THREE.DoubleSide,
@@ -129,7 +132,7 @@ scene.add(cubeCamera)
 
 // --- Floor Texture ---
 const floorTexture = new THREE.TextureLoader().load(
-  'https://tg-3d-room.netlify.app/RoughnessMap.jpg'
+  'https://tg-3d-room.netlify.app/BaseColour.jpg'
 )
 floorTexture.wrapS = THREE.RepeatWrapping
 floorTexture.wrapT = THREE.RepeatWrapping
@@ -199,6 +202,24 @@ cube.position.set(0.8, -wallHeight / 2 + 0.25, -roomDepth / 1.5)
 cube.castShadow = true
 cube.receiveShadow = true
 scene.add(cube)
+
+// --- OBJ + MTL Model Loader Example ---
+const mtlLoader = new MTLLoader()
+mtlLoader.setPath('models/') // Folder containing your .mtl and .obj
+
+mtlLoader.load('myModel.mtl', (materials) => {
+  materials.preload()
+
+  const objLoader = new OBJLoader()
+  objLoader.setMaterials(materials)
+  objLoader.setPath('models/')
+
+  objLoader.load('myModel.obj', (object) => {
+    object.position.set(0, -(wallHeight / 2), -roomDepth / 2)
+    object.scale.set(1, 1, 1)
+    scene.add(object)
+  })
+})
 
 // Enable shadows in renderer
 renderer.shadowMap.enabled = true
