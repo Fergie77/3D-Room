@@ -419,9 +419,9 @@ mtlLoader.load('Flying_Flea.mtl', (materials) => {
   objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
 
   objLoader.load('Flying_Flea.obj', (object) => {
-    object.position.set(0, -(wallHeight / 2 - 0.3), -roomDepth / 2 - 3)
-    object.rotation.set(0, 100, 0)
-    object.scale.set(0.5, 0.5, 0.5)
+    object.position.set(0, -(wallHeight / 2 - 0.5), -roomDepth / 2 - 2)
+    object.rotation.set(0, 1.5, 0)
+    object.scale.set(0.8, 0.8, 0.8)
     // Enable shadows for all meshes in the model
     object.traverse((child) => {
       if (child.isMesh) {
