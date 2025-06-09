@@ -308,8 +308,8 @@ scene.add(rightWall)
 scene.add(frontWall)
 
 // Add lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
-scene.add(ambientLight)
+// const ambientLight = new THREE.AmbientLight(0xffffff, 0)
+// scene.add(ambientLight)
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
 directionalLight.position.set(0, 5, 5)
@@ -335,26 +335,28 @@ const floorTexture = new THREE.TextureLoader().load(
 )
 floorTexture.wrapS = THREE.RepeatWrapping
 floorTexture.wrapT = THREE.RepeatWrapping
-floorTexture.repeat.set(2, 2)
+// Adjust repeat based on room dimensions to maintain texture proportions
+const textureScale = 0.1 // Adjust this value to control the overall texture density
+floorTexture.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 
 const normalMap = new THREE.TextureLoader().load(
   'https://tg-3d-room.netlify.app/NormalMap.jpg'
 )
 normalMap.wrapS = THREE.RepeatWrapping
 normalMap.wrapT = THREE.RepeatWrapping
-normalMap.repeat.set(2, 2)
+normalMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 
 const roughnessMap = new THREE.TextureLoader().load(
   'https://tg-3d-room.netlify.app/RoughnessMap.jpg'
 )
 roughnessMap.wrapS = THREE.RepeatWrapping
 roughnessMap.wrapT = THREE.RepeatWrapping
-roughnessMap.repeat.set(2, 2)
+roughnessMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 
 // --- PBR Floor Material ---
 const floorMaterial = new THREE.MeshStandardMaterial({
   map: floorTexture,
-  metalness: 1,
+  color: 0x333333,
   roughness: 0.8,
   envMap: cubeRenderTarget.texture,
   envMapIntensity: 1.0,
@@ -470,17 +472,28 @@ function animate(time) {
   renderer.render(scene, camera)
 }
 
-// Modify the keyboard event listener to directly access the VideoScreen instances
-document.addEventListener('keydown', (event) => {
-  if (event.key === '1') {
-    const leftScreen = leftWall.userData.videoScreen
-    if (leftScreen) leftScreen.nextVideo()
-  } else if (event.key === '2') {
-    const rightScreen = rightWall.userData.videoScreen
-    if (rightScreen) rightScreen.nextVideo()
-  } else if (event.key === '3') {
-    const frontScreen = frontWall.userData.videoScreen
-    if (frontScreen) frontScreen.nextVideo()
+// Remove the keyboard event listener and add click handler for data-room elements
+document.addEventListener('click', (event) => {
+  // Find the closest element with data-room attribute
+  const roomElement = event.target.closest('[data-room]')
+  if (!roomElement) return
+
+  const roomType = roomElement.getAttribute('data-room')
+
+  // Update all walls to the selected room type
+  const leftScreen = leftWall.userData.videoScreen
+  const rightScreen = rightWall.userData.videoScreen
+  const frontScreen = frontWall.userData.videoScreen
+
+  // Only transition if the current video isn't already the selected one
+  if (leftScreen && leftScreen.currentVideoIndex !== parseInt(roomType) - 1) {
+    leftScreen.nextVideo()
+  }
+  if (rightScreen && rightScreen.currentVideoIndex !== parseInt(roomType) - 1) {
+    rightScreen.nextVideo()
+  }
+  if (frontScreen && frontScreen.currentVideoIndex !== parseInt(roomType) - 1) {
+    frontScreen.nextVideo()
   }
 })
 
