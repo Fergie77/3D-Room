@@ -266,17 +266,17 @@ class VideoScreen {
 // Replace the createVideoPlaneFromSrc calls with VideoScreen instances
 const leftWallVideos = [
   'https://tg-3d-room.netlify.app/FF_PS_02_L_R.mp4',
-  'https://tg-3d-room.netlify.app/FF_PS_02_C_1.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/FF_MISC_07_L_R.webm', // Add your second video URL here
 ]
 
 const rightWallVideos = [
   'https://tg-3d-room.netlify.app/FF_PS_02_L_R.mp4',
-  'https://tg-3d-room.netlify.app/FF_PS_02_L_R.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/FF_MISC_07_L_R.webm', // Add your second video URL here
 ]
 
 const frontWallVideos = [
   'https://tg-3d-room.netlify.app/FF_PS_02_C_1.mp4',
-  'https://tg-3d-room.netlify.app/FF_PS_02_C_1.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/FF_MISC_05_C.webm', // Add your second video URL here
 ]
 
 const leftWall = new VideoScreen(
