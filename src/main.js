@@ -473,28 +473,36 @@ function animate(time) {
 }
 
 // Remove the keyboard event listener and add click handler for data-room elements
-document.addEventListener('click', (event) => {
-  // Find the closest element with data-room attribute
+document.addEventListener('click', async (event) => {
   const roomElement = event.target.closest('[data-room]')
   if (!roomElement) return
 
   const roomType = roomElement.getAttribute('data-room')
-
-  // Update all walls to the selected room type
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
 
-  // Only transition if the current video isn't already the selected one
-  if (leftScreen && leftScreen.currentVideoIndex !== parseInt(roomType) - 1) {
-    leftScreen.nextVideo()
+  // Helper to safely transition a screen
+  async function safeTransition(screen, targetIndex) {
+    if (screen && screen.currentVideoIndex !== targetIndex) {
+      // Call nextVideo, but only proceed after video is playing
+      await screen.nextVideo()
+      const video = screen.planes[0]?.userData?.video
+      if (video && video.paused) {
+        try {
+          await video.play()
+        } catch (e) {
+          // Show a prompt or overlay here if needed
+          alert('Please tap again to enable video playback.')
+        }
+      }
+    }
   }
-  if (rightScreen && rightScreen.currentVideoIndex !== parseInt(roomType) - 1) {
-    rightScreen.nextVideo()
-  }
-  if (frontScreen && frontScreen.currentVideoIndex !== parseInt(roomType) - 1) {
-    frontScreen.nextVideo()
-  }
+
+  const targetIndex = parseInt(roomType) - 1
+  await safeTransition(leftScreen, targetIndex)
+  await safeTransition(rightScreen, targetIndex)
+  await safeTransition(frontScreen, targetIndex)
 })
 
 animate()
