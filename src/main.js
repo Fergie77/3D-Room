@@ -646,9 +646,13 @@ function animate(time) {
 }
 
 const degToRad = (deg) => (deg * Math.PI) / 180
+const isMobile = window.innerWidth < 700
+const initialPosition = isMobile
+  ? new THREE.Vector3(0, -0.3, -4)
+  : new THREE.Vector3(0, -0.3, -5)
 const cameraStates = {
   0: {
-    position: new THREE.Vector3(0, -0.3, -5),
+    position: initialPosition,
     rotation: new THREE.Euler(0, 0, 0),
   },
   1: {
