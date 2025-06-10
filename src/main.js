@@ -676,7 +676,11 @@ const cameraStates = {
 const initialState = cameraStates[0]
 camera.position.copy(initialState.position)
 camera.rotation.copy(initialState.rotation)
-controls.update()
+if (window.innerWidth < 700 || window.innerWidth >= 700) {
+  // Always for state 0
+  controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1))
+  controls.update()
+}
 
 function animateCameraTo(state) {
   gsap.to(camera.position, {
