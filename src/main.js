@@ -39,7 +39,7 @@ const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.enablePan = true
-controls.enableZoom = false
+controls.enableZoom = true
 controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1)) // Look 1 unit in front of camera
 controls.update()
 controls.rotateSpeed = -0.5 // Invert rotation direction
@@ -617,6 +617,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
 // Modify the animation loop to include video updates
 let lastTime = 0
+
 function animate(time) {
   const deltaTime = (time - lastTime) / 1000 // Convert to seconds
   lastTime = time
@@ -642,6 +643,60 @@ function animate(time) {
   floor.visible = true
 
   renderer.render(scene, camera)
+}
+
+const degToRad = (deg) => (deg * Math.PI) / 180
+const cameraStates = {
+  0: {
+    position: new THREE.Vector3(0, -0.3, -5),
+    rotation: new THREE.Euler(0, 0, 0),
+  },
+  1: {
+    position: new THREE.Vector3(-0.81, -0.36, -1.63),
+    rotation: new THREE.Euler(degToRad(5.3), degToRad(-38.0), degToRad(3.3)),
+  },
+  2: {
+    position: new THREE.Vector3(1.57, -0.5, -3.31),
+    rotation: new THREE.Euler(
+      degToRad(148.9),
+      degToRad(72.9),
+      degToRad(-150.0)
+    ),
+  },
+  3: {
+    position: new THREE.Vector3(-0.36, -0.08, -7.99),
+    rotation: new THREE.Euler(degToRad(179.4), degToRad(-3.0), degToRad(180.0)),
+  },
+}
+
+const initialState = cameraStates[0]
+camera.position.copy(initialState.position)
+camera.rotation.copy(initialState.rotation)
+controls.update()
+
+function animateCameraTo(state) {
+  gsap.to(camera.position, {
+    x: state.position.x,
+    y: state.position.y,
+    z: state.position.z,
+    duration: 2,
+    ease: 'ease.inOut',
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      controls.update()
+    },
+  })
+  gsap.to(camera.rotation, {
+    x: state.rotation.x,
+    y: state.rotation.y,
+    z: state.rotation.z,
+    duration: 2,
+    ease: 'ease.inOut',
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      controls.update()
+    },
+  })
 }
 
 // Remove the keyboard event listener and add click handler for data-room elements
@@ -671,6 +726,10 @@ document.addEventListener('click', async (event) => {
   }
 
   const targetIndex = parseInt(roomType) - 1
+  // Animate camera to the new state if defined
+  if (cameraStates[targetIndex]) {
+    animateCameraTo(cameraStates[targetIndex])
+  }
   // Go to the selected video index for all screens in parallel
   await Promise.all([
     safeGoTo(leftScreen, targetIndex),
