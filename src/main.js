@@ -400,7 +400,7 @@ const floorTexture = new THREE.TextureLoader().load(
 floorTexture.wrapS = THREE.RepeatWrapping
 floorTexture.wrapT = THREE.RepeatWrapping
 // Adjust repeat based on room dimensions to maintain texture proportions
-const textureScale = 0.1 // Adjust this value to control the overall texture density
+const textureScale = 0.3 // Adjust this value to control the overall texture density
 floorTexture.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 
 const normalMap = new THREE.TextureLoader().load(
@@ -411,7 +411,7 @@ normalMap.wrapT = THREE.RepeatWrapping
 normalMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 
 const roughnessMap = new THREE.TextureLoader().load(
-  'https://tg-3d-room.netlify.app/RoughnessMap.jpg'
+  'https://tg-3d-room.netlify.app/RoughnessMap2.jpg'
 )
 roughnessMap.wrapS = THREE.RepeatWrapping
 roughnessMap.wrapT = THREE.RepeatWrapping
@@ -420,12 +420,15 @@ roughnessMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
 // --- PBR Floor Material ---
 const floorMaterial = new THREE.MeshStandardMaterial({
   map: floorTexture,
-  color: 0x333333,
-  roughness: 0.8,
+  color: 0x222222,
+  roughness: 1,
+  metalness: 0.2,
   envMap: cubeRenderTarget.texture,
-  envMapIntensity: 1.0,
+  envMapIntensity: 1,
   normalMap: normalMap,
+  normalScale: new THREE.Vector2(0.1, 0.1),
   roughnessMap: roughnessMap,
+  //metalnessMap: roughnessMap,
 })
 
 // --- Floor Mesh ---
@@ -444,7 +447,7 @@ const ceilingSegments = 32 // Number of segments for smooth curve
 const ceilingGeometry = new THREE.CylinderGeometry(
   ceilingRadius,
   ceilingRadius,
-  roomDepth + 0.1,
+  roomDepth + 1,
   ceilingSegments,
   1,
   true, // openEnded
@@ -609,6 +612,14 @@ document.addEventListener('click', async (event) => {
     safeTransition(frontScreen, targetIndex),
     safeTransition(backScreen, targetIndex),
   ])
+})
+
+// Handle window resize efficiently
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(window.devicePixelRatio)
 })
 
 animate()
