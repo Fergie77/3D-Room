@@ -371,7 +371,7 @@ scene.add(frontWall)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.3) // Add subtle ambient light
 scene.add(ambientLight)
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2) // Increased intensity
+const directionalLight = new THREE.DirectionalLight(0xa7cb09, 1.2) // Increased intensity
 directionalLight.position.set(0, 8, 2) // Moved higher and more forward
 directionalLight.castShadow = true
 directionalLight.shadow.mapSize.width = 2048 // Increased shadow resolution
