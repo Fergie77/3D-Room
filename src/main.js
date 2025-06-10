@@ -21,7 +21,7 @@ const camera = new THREE.PerspectiveCamera(
 )
 // Move camera back on mobile
 if (window.innerWidth < 700) {
-  camera.position.set(0, -0.3, -3)
+  camera.position.set(0, -0.3, -4)
 } else {
   camera.position.set(0, -0.3, -5)
 }
