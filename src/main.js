@@ -443,7 +443,7 @@ scene.add(floor)
 // Add a ceiling
 const ceilingRadius = roomWidth / 2 + 0.1 // Radius of the curved ceiling
 //const ceilingHeight = wallHeight / 2 // Height of the curve
-const ceilingSegments = 32 // Number of segments for smooth curve
+const ceilingSegments = 64 // Number of segments for smooth curve
 const ceilingGeometry = new THREE.CylinderGeometry(
   ceilingRadius,
   ceilingRadius,
