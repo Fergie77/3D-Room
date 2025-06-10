@@ -278,6 +278,55 @@ class VideoScreen {
     }
   }
 
+  async goToVideo(targetIndex) {
+    if (this.isTransitioning || this.currentVideoIndex === targetIndex) return
+    try {
+      // Always load a fresh video for the next transition
+      await this.loadVideo(1)
+      const nextVideo = this.planes[1].userData.video
+      nextVideo.src = this.videoSources[targetIndex]
+      await new Promise((resolve, reject) => {
+        const handleCanPlay = () => {
+          nextVideo.removeEventListener('canplay', handleCanPlay)
+          resolve()
+        }
+        nextVideo.addEventListener('canplay', handleCanPlay)
+        const handleError = (error) => {
+          nextVideo.removeEventListener('error', handleError)
+          reject(error)
+        }
+        nextVideo.addEventListener('error', handleError)
+        nextVideo.load()
+      })
+      try {
+        await nextVideo.play()
+        this.isTransitioning = true
+        this.transitionProgress = 0
+        this.planes[1].visible = true
+        this.currentVideoIndex = targetIndex
+      } catch (playError) {
+        document.addEventListener(
+          'click',
+          async () => {
+            try {
+              await nextVideo.play()
+              this.isTransitioning = true
+              this.transitionProgress = 0
+              this.planes[1].visible = true
+              this.currentVideoIndex = targetIndex
+            } catch (e) {
+              console.error('Failed to play video:', e)
+            }
+          },
+          { once: true }
+        )
+      }
+    } catch (error) {
+      console.error('Error transitioning to video index', targetIndex, error)
+      this.isTransitioning = false
+    }
+  }
+
   update(deltaTime) {
     if (this.isTransitioning && this.planes[0] && this.planes[1]) {
       const currentVideo = this.planes[0].userData.video
@@ -344,18 +393,21 @@ class VideoScreen {
 
 // Replace the createVideoPlaneFromSrc calls with VideoScreen instances
 const leftWallVideos = [
-  'https://tg-3d-room.netlify.app/FF_PS_02_L_R.mp4',
-  'https://tg-3d-room.netlify.app/FF_MISC_07_L_R.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
 ]
 
 const rightWallVideos = [
-  'https://tg-3d-room.netlify.app/FF_PS_02_L_R.mp4',
-  'https://tg-3d-room.netlify.app/FF_MISC_07_L_R.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
 ]
 
 const frontWallVideos = [
-  'https://tg-3d-room.netlify.app/FF_PS_02_C_1.mp4',
-  'https://tg-3d-room.netlify.app/FF_MISC_05_C.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4', // Add your second video URL here
 ]
 
 const leftWall = new VideoScreen(
@@ -370,7 +422,7 @@ const rightWall = new VideoScreen(
   roomDepth,
   wallHeight,
   [roomWidth / 2, 0, -roomDepth / 2],
-  [0, -Math.PI / 2, 0],
+  [0, Math.PI / 2, 0],
   rightWallVideos
 ).getMesh()
 
@@ -614,10 +666,10 @@ document.addEventListener('click', async (event) => {
   const frontScreen = frontWall.userData.videoScreen
   const backScreen = backWall.userData.videoScreen
 
-  // Helper to safely transition a screen
-  async function safeTransition(screen, targetIndex) {
+  // Helper to safely transition a screen to a specific index
+  async function safeGoTo(screen, targetIndex) {
     if (screen && screen.currentVideoIndex !== targetIndex) {
-      await screen.nextVideo()
+      await screen.goToVideo(targetIndex)
       const video = screen.planes[0]?.userData?.video
       if (video && video.paused) {
         try {
@@ -630,12 +682,12 @@ document.addEventListener('click', async (event) => {
   }
 
   const targetIndex = parseInt(roomType) - 1
-  // Load all screens in parallel
+  // Go to the selected video index for all screens in parallel
   await Promise.all([
-    safeTransition(leftScreen, targetIndex),
-    safeTransition(rightScreen, targetIndex),
-    safeTransition(frontScreen, targetIndex),
-    safeTransition(backScreen, targetIndex),
+    safeGoTo(leftScreen, targetIndex),
+    safeGoTo(rightScreen, targetIndex),
+    safeGoTo(frontScreen, targetIndex),
+    safeGoTo(backScreen, targetIndex),
   ])
 })
 
