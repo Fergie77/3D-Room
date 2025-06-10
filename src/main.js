@@ -542,6 +542,12 @@ mtlLoader.load('Flying_Flea.mtl', (materials) => {
       }
     })
     scene.add(object)
+
+    // Add a mirrored bike on the other side of the room
+    const bike2 = object.clone()
+    bike2.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 + 2)
+    bike2.rotation.set(0, -1.55, 0)
+    scene.add(bike2)
   })
 })
 
