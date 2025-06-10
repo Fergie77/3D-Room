@@ -137,7 +137,7 @@ class VideoScreen {
     })
   }
 
-  async loadVideo(index) {
+  async loadVideo(planeIndex, videoIndex = this.currentVideoIndex) {
     return new Promise((resolve, reject) => {
       if (!this.isLoading) {
         window.activeVideoLoads++
@@ -146,7 +146,7 @@ class VideoScreen {
       }
       const video = document.createElement('video')
       video.crossOrigin = 'anonymous'
-      video.src = this.videoSources[index]
+      video.src = this.videoSources[videoIndex]
       video.autoplay = true
       video.muted = true
       video.loop = true
@@ -169,7 +169,7 @@ class VideoScreen {
           map: texture,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: index === 0 ? 1 : 0,
+          opacity: planeIndex === 0 ? 1 : 0,
         })
 
         const geometry = new THREE.PlaneGeometry(this.width, this.height)
@@ -180,18 +180,18 @@ class VideoScreen {
         mesh.userData.video = video
 
         // Remove old plane if it exists
-        if (this.planes[index]) {
-          this.group.remove(this.planes[index])
-          if (this.planes[index].userData.video) {
-            this.planes[index].userData.video.pause()
-            this.planes[index].userData.video.remove()
+        if (this.planes[planeIndex]) {
+          this.group.remove(this.planes[planeIndex])
+          if (this.planes[planeIndex].userData.video) {
+            this.planes[planeIndex].userData.video.pause()
+            this.planes[planeIndex].userData.video.remove()
           }
         }
 
-        this.planes[index] = mesh
+        this.planes[planeIndex] = mesh
         this.group.add(mesh)
 
-        if (index === 1) {
+        if (planeIndex === 1) {
           mesh.visible = false
         }
 
@@ -281,23 +281,9 @@ class VideoScreen {
   async goToVideo(targetIndex) {
     if (this.isTransitioning || this.currentVideoIndex === targetIndex) return
     try {
-      // Always load a fresh video for the next transition
-      await this.loadVideo(1)
+      // Only load the target video for the transition
+      await this.loadVideo(1, targetIndex)
       const nextVideo = this.planes[1].userData.video
-      nextVideo.src = this.videoSources[targetIndex]
-      await new Promise((resolve, reject) => {
-        const handleCanPlay = () => {
-          nextVideo.removeEventListener('canplay', handleCanPlay)
-          resolve()
-        }
-        nextVideo.addEventListener('canplay', handleCanPlay)
-        const handleError = (error) => {
-          nextVideo.removeEventListener('error', handleError)
-          reject(error)
-        }
-        nextVideo.addEventListener('error', handleError)
-        nextVideo.load()
-      })
       try {
         await nextVideo.play()
         this.isTransitioning = true
