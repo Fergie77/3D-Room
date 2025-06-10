@@ -1,26 +1,46 @@
-import { gsap } from 'gsap'
+// Third-party imports
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
+
+// Local imports
+import { animateCameraTo } from './cameraAnimation.js'
+import { cameraStates } from './cameraStates.js'
+import { CardParagraphController } from './cardParagraphController.js'
+import { createCeiling, createArchCircle } from './ceiling.js'
+import { createFloor } from './floor.js'
+import { setupLighting } from './lighting.js'
+import { loadBikeModel } from './modelLoader.js'
+import { VideoScreen } from './videoScreen.js'
+import './loadingOverlay.js'
+
+// Initialize video loading counter
+window.activeVideoLoads = 0
+
+// Example paragraphs for each room
+const paragraphs = {
+  0: 'Taking over Aures London, we used 270-degree screens to craft a truly immersive experience - capturing the essence of the urban landscapes where the Flying Flea thrives as a modern city bike and personifying the feeling of driving it. Visually articulating a feeling of lightness, of being in a flow state with a new generation of electric motorcycle.',
+  1: "Our night began by transporting guests around the world, plunging them into the core brand cities of London, LA, Delhi and Tokyo. Full room projections of nuanced and well researched footage built a visually rich tapestry of life in the city. Busy streets, Chinatown, the bustle of Soho and independent cafes in London while the dimly lit backstreet izakayas contrasted the overwhelming neon signage of Tokyo's Akihabara district.",
+  2: 'As the night evolves so did the visuals, perfectly capturing the electrified essence of the Flying Flea. Pulsing animations incorporated design cues from the bike itself and subtly signal brand language. This wasn’t just a product reveal - it was a sensory experience, blending visuals and sound to create a festival-like atmosphere, with the Flying Flea as the headline act.',
+  3: 'We combined Houdini CGI, 2D animation, and Touch Designer to create over 100 original animated assets for an ever-evolving display that matched the energy of the evening. From the calm, exploratory moments to the exhilarating, high-energy sequences, every visual transition was carefully choreographed to enhance the overall experience.',
+}
+const cardController = new CardParagraphController(paragraphs)
 
 // Create scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x000000)
 
 // Room dimensions
-const roomWidth = 4.6666666666 // distance between left and right walls
+const roomWidth = 4.6666666666
 const wallHeight = 2
-const roomDepth = 8.8888888888 // distance from camera to front wall
+const roomDepth = 8.8888888888
 
 // Create camera
 const camera = new THREE.PerspectiveCamera(
-  75, // fov
-  window.innerWidth / window.innerHeight, // aspect
-  0.1, // near
-  1000 // far
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
 )
-// Move camera back on mobile
 if (window.innerWidth < 700) {
   camera.position.set(0, -0.3, -4)
 } else {
@@ -40,409 +60,10 @@ controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.enablePan = true
 controls.enableZoom = true
-controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1)) // Look 1 unit in front of camera
+controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1))
 controls.update()
-controls.rotateSpeed = -0.5 // Invert rotation direction
-controls.panSpeed = -1 // Invert panning direction
-
-// Add loading overlay to DOM (CSS spinner)
-const loadingOverlay = document.createElement('div')
-loadingOverlay.style.position = 'fixed'
-loadingOverlay.style.top = '0'
-loadingOverlay.style.left = '0'
-loadingOverlay.style.width = '100vw'
-loadingOverlay.style.height = '100vh'
-loadingOverlay.style.background = 'rgba(0,0,0,0.7)'
-loadingOverlay.style.display = 'flex'
-loadingOverlay.style.justifyContent = 'center'
-loadingOverlay.style.alignItems = 'center'
-loadingOverlay.style.zIndex = '1000'
-loadingOverlay.style.flexDirection = 'column'
-loadingOverlay.innerHTML = `<div class="spinner"></div>`
-document.body.appendChild(loadingOverlay)
-// Add spinner CSS
-const spinnerStyle = document.createElement('style')
-spinnerStyle.innerHTML = `
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 2px solid #fff;
-  border-top: 2px solid #000;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-`
-document.head.appendChild(spinnerStyle)
-
-// Global loading counter for all video screens
-window.activeVideoLoads = 0
-function showGlobalLoading() {
-  gsap.to(loadingOverlay, {
-    opacity: 1,
-    duration: 0.5,
-    pointerEvents: 'auto',
-    onStart: () => {
-      loadingOverlay.style.pointerEvents = 'auto'
-    },
-  })
-}
-function hideGlobalLoading() {
-  gsap.to(loadingOverlay, {
-    opacity: 0,
-    duration: 0.5,
-    onComplete: () => {
-      loadingOverlay.style.pointerEvents = 'none'
-    },
-  })
-}
-
-// VideoScreen class to handle multiple videos and transitions
-class VideoScreen {
-  constructor(
-    width,
-    height,
-    position,
-    rotation,
-    videoSources,
-    transitionDuration = 1.0
-  ) {
-    this.width = width
-    this.height = height
-    this.position = position
-    this.rotation = rotation
-    this.videoSources = videoSources
-    this.currentVideoIndex = 0
-    this.transitionDuration = transitionDuration
-    this.isTransitioning = false
-    this.transitionProgress = 0
-    this.isLoading = false
-
-    // Create the group
-    this.group = new THREE.Group()
-    this.group.userData.videoScreen = this
-
-    // Initialize with empty planes
-    this.planes = [null, null]
-
-    // Load the first video
-    this.loadVideo(0).then(() => {
-      // Start playing the first video
-      if (this.planes[0] && this.planes[0].userData.video) {
-        this.planes[0].userData.video.play()
-      }
-    })
-  }
-
-  async loadVideo(planeIndex, videoIndex = this.currentVideoIndex) {
-    return new Promise((resolve, reject) => {
-      if (!this.isLoading) {
-        window.activeVideoLoads++
-        if (window.activeVideoLoads === 1) showGlobalLoading()
-        this.isLoading = true
-      }
-      const video = document.createElement('video')
-      video.crossOrigin = 'anonymous'
-      video.src = this.videoSources[videoIndex]
-      video.autoplay = true
-      video.muted = true
-      video.loop = true
-      video.playsInline = true
-      video.style.display = 'none'
-
-      // Wait for video to be loaded
-      video.addEventListener('loadeddata', () => {
-        setTimeout(() => {
-          if (this.isLoading) {
-            window.activeVideoLoads--
-            if (window.activeVideoLoads === 0) hideGlobalLoading()
-            this.isLoading = false
-          }
-        }, 2000)
-        const texture = new THREE.VideoTexture(video)
-        texture.encoding = THREE.sRGBEncoding
-
-        const material = new THREE.MeshBasicMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: planeIndex === 0 ? 1 : 0,
-        })
-
-        const geometry = new THREE.PlaneGeometry(this.width, this.height)
-        const mesh = new THREE.Mesh(geometry, material)
-        mesh.position.set(...this.position)
-        if (this.rotation) mesh.rotation.set(...this.rotation)
-
-        mesh.userData.video = video
-
-        // Remove old plane if it exists
-        if (this.planes[planeIndex]) {
-          this.group.remove(this.planes[planeIndex])
-          if (this.planes[planeIndex].userData.video) {
-            this.planes[planeIndex].userData.video.pause()
-            this.planes[planeIndex].userData.video.remove()
-          }
-        }
-
-        this.planes[planeIndex] = mesh
-        this.group.add(mesh)
-
-        if (planeIndex === 1) {
-          mesh.visible = false
-        }
-
-        video.addEventListener('ended', () => {
-          video.play()
-        })
-
-        resolve()
-      })
-
-      video.addEventListener('error', (error) => {
-        console.error('Error loading video:', error)
-        reject(error)
-      })
-
-      document.body.appendChild(video)
-    })
-  }
-
-  async nextVideo() {
-    if (this.isTransitioning) return
-
-    try {
-      // Prepare next video
-      const nextIndex = (this.currentVideoIndex + 1) % this.videoSources.length
-
-      // Always load a fresh video for the next transition
-      // This ensures we can cycle back to the first video properly
-      await this.loadVideo(1)
-
-      const nextVideo = this.planes[1].userData.video
-
-      // Set new source and prepare to play
-      nextVideo.src = this.videoSources[nextIndex]
-
-      // Wait for the video to be loaded and ready to play
-      await new Promise((resolve, reject) => {
-        const handleCanPlay = () => {
-          nextVideo.removeEventListener('canplay', handleCanPlay)
-          resolve()
-        }
-        nextVideo.addEventListener('canplay', handleCanPlay)
-
-        const handleError = (error) => {
-          nextVideo.removeEventListener('error', handleError)
-          reject(error)
-        }
-        nextVideo.addEventListener('error', handleError)
-
-        nextVideo.load()
-      })
-
-      // Start playing and wait for it to actually start
-      try {
-        await nextVideo.play()
-        // Only start transition if we successfully started playing
-        this.isTransitioning = true
-        this.transitionProgress = 0
-        this.planes[1].visible = true
-        this.currentVideoIndex = nextIndex
-      } catch (playError) {
-        console.warn('Autoplay prevented:', playError)
-        // Try to play again with user interaction
-        document.addEventListener(
-          'click',
-          async () => {
-            try {
-              await nextVideo.play()
-              // Start transition after successful play
-              this.isTransitioning = true
-              this.transitionProgress = 0
-              this.planes[1].visible = true
-              this.currentVideoIndex = nextIndex
-            } catch (e) {
-              console.error('Failed to play video:', e)
-            }
-          },
-          { once: true }
-        )
-      }
-    } catch (error) {
-      console.error('Error transitioning to next video:', error)
-      this.isTransitioning = false
-    }
-  }
-
-  async goToVideo(targetIndex) {
-    if (this.isTransitioning || this.currentVideoIndex === targetIndex) return
-    try {
-      // Only load the target video for the transition
-      await this.loadVideo(1, targetIndex)
-      const nextVideo = this.planes[1].userData.video
-      try {
-        await nextVideo.play()
-        this.isTransitioning = true
-        this.transitionProgress = 0
-        this.planes[1].visible = true
-        this.currentVideoIndex = targetIndex
-      } catch (playError) {
-        document.addEventListener(
-          'click',
-          async () => {
-            try {
-              await nextVideo.play()
-              this.isTransitioning = true
-              this.transitionProgress = 0
-              this.planes[1].visible = true
-              this.currentVideoIndex = targetIndex
-            } catch (e) {
-              console.error('Failed to play video:', e)
-            }
-          },
-          { once: true }
-        )
-      }
-    } catch (error) {
-      console.error('Error transitioning to video index', targetIndex, error)
-      this.isTransitioning = false
-    }
-  }
-
-  update(deltaTime) {
-    if (this.isTransitioning && this.planes[0] && this.planes[1]) {
-      const currentVideo = this.planes[0].userData.video
-      const nextVideo = this.planes[1].userData.video
-
-      // Ensure next video is playing
-      if (nextVideo.paused) {
-        nextVideo
-          .play()
-          .catch((e) => console.warn('Failed to play during transition:', e))
-      }
-
-      this.transitionProgress += deltaTime / this.transitionDuration
-
-      if (this.transitionProgress >= 1) {
-        // Transition complete
-        this.isTransitioning = false
-        this.transitionProgress = 0
-
-        // Stop and cleanup the current video
-        currentVideo.pause()
-        currentVideo.remove() // Remove the video element from DOM
-
-        // Ensure the next video is playing and visible
-        if (!nextVideo.paused) {
-          // Update material properties
-          this.planes[0].material.opacity = 0
-          this.planes[1].material.opacity = 1
-
-          // Swap the planes in the group
-          this.group.remove(this.planes[0])
-          this.group.remove(this.planes[1])
-
-          // Update the plane references
-          ;[this.planes[0], this.planes[1]] = [this.planes[1], this.planes[0]]
-
-          // Re-add the planes to the group
-          this.group.add(this.planes[0])
-          this.group.add(this.planes[1])
-
-          // Hide the old plane (now at index 1)
-          this.planes[1].visible = false
-          this.planes[1] = null // Clear the reference to allow for fresh loading
-        } else {
-          // If video isn't playing, reset transition
-          console.warn('Next video not playing, resetting transition')
-          this.isTransitioning = false
-          this.transitionProgress = 0
-          this.planes[1].visible = false
-          this.planes[1].material.opacity = 0
-        }
-      } else {
-        // Update transition
-        this.planes[0].material.opacity = 1 - this.transitionProgress
-        this.planes[1].material.opacity = this.transitionProgress
-      }
-    }
-  }
-
-  getMesh() {
-    return this.group
-  }
-}
-
-// Replace the createVideoPlaneFromSrc calls with VideoScreen instances
-const leftWallVideos = [
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4', // Add your second video URL here
-]
-
-const rightWallVideos = [
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4', // Add your second video URL here
-]
-
-const frontWallVideos = [
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/CENTRE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4', // Add your second video URL here
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/CENTRE.mp4', // Add your second video URL here
-]
-
-const leftWall = new VideoScreen(
-  roomDepth,
-  wallHeight,
-  [-(roomWidth / 2), 0, -roomDepth / 2],
-  [0, Math.PI / 2, 0],
-  leftWallVideos
-).getMesh()
-
-const rightWall = new VideoScreen(
-  roomDepth,
-  wallHeight,
-  [roomWidth / 2, 0, -roomDepth / 2],
-  [0, Math.PI / 2, 0],
-  rightWallVideos
-).getMesh()
-
-const frontWall = new VideoScreen(
-  roomWidth,
-  wallHeight,
-  [0, 0, -roomDepth],
-  [0, 0, 0],
-  frontWallVideos
-).getMesh()
-
-scene.add(leftWall)
-scene.add(rightWall)
-scene.add(frontWall)
-
-// Add lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3) // Add subtle ambient light
-scene.add(ambientLight)
-
-const directionalLight = new THREE.DirectionalLight(0xa7cb09, 1.2) // Increased intensity
-directionalLight.position.set(0, 8, 2) // Moved higher and more forward
-directionalLight.castShadow = true
-directionalLight.shadow.mapSize.width = 2048 // Increased shadow resolution
-directionalLight.shadow.mapSize.height = 2048
-directionalLight.shadow.camera.near = 0.5
-directionalLight.shadow.camera.far = 30 // Increased far plane
-directionalLight.shadow.camera.left = -10 // Adjusted shadow camera frustum
-directionalLight.shadow.camera.right = 10
-directionalLight.shadow.camera.top = 10
-directionalLight.shadow.camera.bottom = -10
-scene.add(directionalLight)
+controls.rotateSpeed = -0.5
+controls.panSpeed = -1
 
 // --- Cube Camera for dynamic reflection ---
 const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
@@ -453,272 +74,145 @@ const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
 const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
 scene.add(cubeCamera)
 
-// --- Floor Texture ---
-const floorTexture = new THREE.TextureLoader().load(
-  'https://tg-3d-room.netlify.app/BaseColour.jpg'
+// --- Floor ---
+const textureScale = 0.3
+const floor = createFloor(
+  roomWidth,
+  roomDepth,
+  wallHeight,
+  cubeRenderTarget,
+  textureScale
 )
-floorTexture.wrapS = THREE.RepeatWrapping
-floorTexture.wrapT = THREE.RepeatWrapping
-// Adjust repeat based on room dimensions to maintain texture proportions
-const textureScale = 0.3 // Adjust this value to control the overall texture density
-floorTexture.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
-
-const normalMap = new THREE.TextureLoader().load(
-  'https://tg-3d-room.netlify.app/NormalMap.jpg'
-)
-normalMap.wrapS = THREE.RepeatWrapping
-normalMap.wrapT = THREE.RepeatWrapping
-normalMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
-
-const roughnessMap = new THREE.TextureLoader().load(
-  'https://tg-3d-room.netlify.app/RoughnessMap2.jpg'
-)
-roughnessMap.wrapS = THREE.RepeatWrapping
-roughnessMap.wrapT = THREE.RepeatWrapping
-roughnessMap.repeat.set(roomWidth * textureScale, roomDepth * textureScale)
-
-// --- PBR Floor Material ---
-const floorMaterial = new THREE.MeshStandardMaterial({
-  map: floorTexture,
-  color: 0x222222,
-  roughness: 1,
-  metalness: 0.2,
-  envMap: cubeRenderTarget.texture,
-  envMapIntensity: 1,
-  normalMap: normalMap,
-  normalScale: new THREE.Vector2(0.1, 0.1),
-  roughnessMap: roughnessMap,
-  //metalnessMap: roughnessMap,
-})
-
-// --- Floor Mesh ---
-const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth)
-const floor = new THREE.Mesh(floorGeometry, floorMaterial)
-floor.rotation.x = -Math.PI / 2
-floor.position.y = -(wallHeight / 2)
-floor.position.z = -roomDepth / 2
-floor.receiveShadow = true
 scene.add(floor)
 
-// Add a ceiling
-const ceilingRadius = roomWidth / 2 + 0.1 // Radius of the curved ceiling
-//const ceilingHeight = wallHeight / 2 // Height of the curve
-const ceilingSegments = 64 // Number of segments for smooth curve
-const ceilingGeometry = new THREE.CylinderGeometry(
-  ceilingRadius,
-  ceilingRadius,
-  roomDepth + 1,
-  ceilingSegments,
-  1,
-  true, // openEnded
-  Math.PI, // thetaStart
-  Math.PI // thetaLength
-)
-const ceilingMaterial = new THREE.MeshStandardMaterial({
-  color: 0x333333,
-  side: THREE.DoubleSide,
-  roughness: 0.3,
-  metalness: 0.8,
-  envMap: cubeRenderTarget.texture,
-  envMapIntensity: 1.2,
-})
-const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial)
-ceiling.rotation.x = Math.PI / 2
-ceiling.rotation.z = Math.PI
-ceiling.rotation.y = Math.PI / 2
-ceiling.position.y = wallHeight / 2
-ceiling.position.z = -roomDepth / 2 - 0.05
-ceiling.receiveShadow = true
-scene.add(ceiling)
-
-// Add a circle to fill the black gap above the front wall
-const archCircleGeometry = new THREE.CircleGeometry(
-  ceilingRadius,
+// --- Ceiling and Arch Circles ---
+const ceilingSegments = 64
+const ceiling = createCeiling(
+  roomWidth,
+  roomDepth,
+  wallHeight,
+  cubeRenderTarget,
   ceilingSegments
 )
-const archCircleMaterial = new THREE.MeshStandardMaterial({
-  color: 0x333333,
-  side: THREE.DoubleSide,
-  roughness: 0.3,
-  metalness: 0.8,
-  envMap: cubeRenderTarget.texture,
-  envMapIntensity: 1.2,
-})
-const archCircle = new THREE.Mesh(archCircleGeometry, archCircleMaterial)
-archCircle.position.set(0, wallHeight / 2, -roomDepth - 0.05)
-archCircle.rotation.x = -Math.PI / 1 // Face into the room
+scene.add(ceiling)
+const archCircle = createArchCircle(
+  roomWidth,
+  roomDepth,
+  wallHeight,
+  cubeRenderTarget,
+  ceilingSegments,
+  true
+)
 scene.add(archCircle)
+const backArchCircle = createArchCircle(
+  roomWidth,
+  roomDepth,
+  wallHeight,
+  cubeRenderTarget,
+  ceilingSegments,
+  false
+)
+scene.add(backArchCircle)
 
-// --- Duplicate front wall and arch circle to the back of the room ---
-const backWallVideos = frontWallVideos // Use same videos as front wall, or change if desired
+// --- Lighting ---
+setupLighting(scene)
+
+// --- Video Screens ---
+const leftWallVideos = [
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4',
+]
+const rightWallVideos = [
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4',
+]
+const frontWallVideos = [
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/CENTRE.mp4',
+]
+const leftWall = new VideoScreen(
+  roomDepth,
+  wallHeight,
+  [-(roomWidth / 2), 0, -roomDepth / 2],
+  [0, Math.PI / 2, 0],
+  leftWallVideos
+).getMesh()
+const rightWall = new VideoScreen(
+  roomDepth,
+  wallHeight,
+  [roomWidth / 2, 0, -roomDepth / 2],
+  [0, Math.PI / 2, 0],
+  rightWallVideos
+).getMesh()
+const frontWall = new VideoScreen(
+  roomWidth,
+  wallHeight,
+  [0, 0, -roomDepth],
+  [0, 0, 0],
+  frontWallVideos
+).getMesh()
+scene.add(leftWall)
+scene.add(rightWall)
+scene.add(frontWall)
+const backWallVideos = frontWallVideos
 const backWall = new VideoScreen(
   roomWidth,
   wallHeight,
-  [0, 0, 0], // Back of the room
-  [0, Math.PI, 0], // Face into the room
+  [0, 0, 0],
+  [0, Math.PI, 0],
   backWallVideos
 ).getMesh()
 scene.add(backWall)
 
-const backArchCircle = new THREE.Mesh(
-  archCircleGeometry,
-  archCircleMaterial.clone()
-)
-backArchCircle.position.set(0, wallHeight / 2, 0 + 0.05)
-backArchCircle.rotation.x = -Math.PI / 1 // Face into the room
-scene.add(backArchCircle)
-
-// --- OBJ + MTL Model Loader Example ---
-const mtlLoader = new MTLLoader()
-mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
-
-// Set the glossiness (roughness) value for the bike material
-const bikeGlossiness = 0.1 // Lower = glossier, 0 = perfect mirror, 1 = matte
-
-mtlLoader.load('Flying_Flea.mtl', (materials) => {
-  materials.preload()
-
-  const objLoader = new OBJLoader()
-  objLoader.setMaterials(materials)
-  objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
-
-  objLoader.load('Flying_Flea.obj', (object) => {
-    object.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 - 2)
-    object.rotation.set(0, 1.55, 0)
-    object.scale.set(1.4, 1.4, 1.4)
-    // Enable shadows for all meshes in the model
-    object.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true
-        child.receiveShadow = true
-        // Replace material with glossy black
-        child.material = new THREE.MeshStandardMaterial({
-          color: 0x000000,
-          metalness: 1,
-          roughness: bikeGlossiness, // Use the variable here
-          envMap: cubeRenderTarget.texture,
-          envMapIntensity: 1.0,
-        })
-      }
-    })
-    scene.add(object)
-
-    // Add a mirrored bike on the other side of the room
-    const bike2 = object.clone()
-    bike2.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 + 2)
-    bike2.rotation.set(0, -1.55, 0)
-    scene.add(bike2)
-  })
-})
+// --- OBJ + MTL Model Loader ---
+const bikeGlossiness = 0.1
+loadBikeModel(scene, cubeRenderTarget, wallHeight, roomDepth, bikeGlossiness)
 
 // Enable shadows in renderer
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-// Modify the animation loop to include video updates
+// Animation loop
 let lastTime = 0
-
 function animate(time) {
-  const deltaTime = (time - lastTime) / 1000 // Convert to seconds
+  const deltaTime = (time - lastTime) / 1000
   lastTime = time
-
   requestAnimationFrame(animate)
   controls.update()
-
-  // Update video screens using stored instances
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
   const backScreen = backWall.userData.videoScreen
-
   if (leftScreen) leftScreen.update(deltaTime)
   if (rightScreen) rightScreen.update(deltaTime)
   if (frontScreen) frontScreen.update(deltaTime)
   if (backScreen) backScreen.update(deltaTime)
-
-  // Update cube camera for dynamic reflection
   floor.visible = false
   cubeCamera.position.copy(floor.position)
   cubeCamera.update(renderer, scene)
   floor.visible = true
-
   renderer.render(scene, camera)
 }
 
-const degToRad = (deg) => (deg * Math.PI) / 180
-const isMobile = window.innerWidth < 700
-const initialPosition = isMobile
-  ? new THREE.Vector3(0, -0.3, -4)
-  : new THREE.Vector3(0, -0.3, -5)
-const cameraStates = {
-  0: {
-    position: initialPosition,
-    rotation: new THREE.Euler(0, 0, 0),
-  },
-  1: {
-    position: new THREE.Vector3(-0.81, -0.36, -1.63),
-    rotation: new THREE.Euler(degToRad(5.3), degToRad(-38.0), degToRad(3.3)),
-  },
-  2: {
-    position: new THREE.Vector3(1.57, -0.5, -3.31),
-    rotation: new THREE.Euler(
-      degToRad(148.9),
-      degToRad(72.9),
-      degToRad(-150.0)
-    ),
-  },
-  3: {
-    position: new THREE.Vector3(-0.36, -0.08, -7.99),
-    rotation: new THREE.Euler(degToRad(179.4), degToRad(-3.0), degToRad(180.0)),
-  },
-}
-
+// Camera state logic
 const initialState = cameraStates[0]
 camera.position.copy(initialState.position)
 camera.rotation.copy(initialState.rotation)
-if (window.innerWidth < 700 || window.innerWidth >= 700) {
-  // Always for state 0
-  controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1))
-  controls.update()
-}
 
-function animateCameraTo(state) {
-  gsap.to(camera.position, {
-    x: state.position.x,
-    y: state.position.y,
-    z: state.position.z,
-    duration: 2,
-    ease: 'ease.inOut',
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
-  })
-  gsap.to(camera.rotation, {
-    x: state.rotation.x,
-    y: state.rotation.y,
-    z: state.rotation.z,
-    duration: 2,
-    ease: 'ease.inOut',
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
-  })
-}
-
-// Remove the keyboard event listener and add click handler for data-room elements
 document.addEventListener('click', async (event) => {
   const roomElement = event.target.closest('[data-room]')
   if (!roomElement) return
-
   const roomType = roomElement.getAttribute('data-room')
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
   const backScreen = backWall.userData.videoScreen
-
-  // Helper to safely transition a screen to a specific index
   async function safeGoTo(screen, targetIndex) {
     if (screen && screen.currentVideoIndex !== targetIndex) {
       await screen.goToVideo(targetIndex)
@@ -732,22 +226,20 @@ document.addEventListener('click', async (event) => {
       }
     }
   }
-
   const targetIndex = parseInt(roomType) - 1
-  // Animate camera to the new state if defined
   if (cameraStates[targetIndex]) {
-    animateCameraTo(cameraStates[targetIndex])
+    animateCameraTo(cameraStates[targetIndex], camera, controls)
   }
-  // Go to the selected video index for all screens in parallel
   await Promise.all([
     safeGoTo(leftScreen, targetIndex),
     safeGoTo(rightScreen, targetIndex),
     safeGoTo(frontScreen, targetIndex),
     safeGoTo(backScreen, targetIndex),
   ])
+  // Update the card paragraph
+  cardController.setRoom(targetIndex)
 })
 
-// Handle window resize efficiently
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
