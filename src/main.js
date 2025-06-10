@@ -19,7 +19,12 @@ const camera = new THREE.PerspectiveCamera(
   0.1, // near
   1000 // far
 )
-camera.position.set(0, -0.3, -5) // Moved camera forward in the room
+// Move camera back on mobile
+if (window.innerWidth < 700) {
+  camera.position.set(0, -0.3, -7)
+} else {
+  camera.position.set(0, -0.3, -5)
+}
 
 // Create renderer
 const renderer = new THREE.WebGLRenderer()
@@ -35,6 +40,47 @@ controls.enablePan = true
 //controls.enableZoom = true
 controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1)) // Look 1 unit in front of camera
 controls.update()
+
+// Add loading overlay to DOM (CSS spinner)
+const loadingOverlay = document.createElement('div')
+loadingOverlay.style.position = 'fixed'
+loadingOverlay.style.top = '0'
+loadingOverlay.style.left = '0'
+loadingOverlay.style.width = '100vw'
+loadingOverlay.style.height = '100vh'
+loadingOverlay.style.background = 'rgba(0,0,0,0.7)'
+loadingOverlay.style.display = 'none'
+loadingOverlay.style.justifyContent = 'center'
+loadingOverlay.style.alignItems = 'center'
+loadingOverlay.style.zIndex = '1000'
+loadingOverlay.style.flexDirection = 'column'
+loadingOverlay.innerHTML = `<div class="spinner"></div>`
+document.body.appendChild(loadingOverlay)
+// Add spinner CSS
+const spinnerStyle = document.createElement('style')
+spinnerStyle.innerHTML = `
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 2px solid #fff;
+  border-top: 2px solid #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}`
+document.head.appendChild(spinnerStyle)
+
+// Global loading counter for all video screens
+window.activeVideoLoads = 0
+function showGlobalLoading() {
+  loadingOverlay.style.display = 'flex'
+}
+function hideGlobalLoading() {
+  loadingOverlay.style.display = 'none'
+}
 
 // VideoScreen class to handle multiple videos and transitions
 class VideoScreen {
@@ -55,6 +101,7 @@ class VideoScreen {
     this.transitionDuration = transitionDuration
     this.isTransitioning = false
     this.transitionProgress = 0
+    this.isLoading = false
 
     // Create the group
     this.group = new THREE.Group()
@@ -74,6 +121,11 @@ class VideoScreen {
 
   async loadVideo(index) {
     return new Promise((resolve, reject) => {
+      if (!this.isLoading) {
+        window.activeVideoLoads++
+        if (window.activeVideoLoads === 1) showGlobalLoading()
+        this.isLoading = true
+      }
       const video = document.createElement('video')
       video.crossOrigin = 'anonymous'
       video.src = this.videoSources[index]
@@ -85,6 +137,11 @@ class VideoScreen {
 
       // Wait for video to be loaded
       video.addEventListener('loadeddata', () => {
+        if (this.isLoading) {
+          window.activeVideoLoads--
+          if (window.activeVideoLoads === 0) hideGlobalLoading()
+          this.isLoading = false
+        }
         const texture = new THREE.VideoTexture(video)
         texture.encoding = THREE.sRGBEncoding
 
@@ -117,6 +174,10 @@ class VideoScreen {
         if (index === 1) {
           mesh.visible = false
         }
+
+        video.addEventListener('ended', () => {
+          video.play()
+        })
 
         resolve()
       })
@@ -527,14 +588,12 @@ document.addEventListener('click', async (event) => {
   // Helper to safely transition a screen
   async function safeTransition(screen, targetIndex) {
     if (screen && screen.currentVideoIndex !== targetIndex) {
-      // Call nextVideo, but only proceed after video is playing
       await screen.nextVideo()
       const video = screen.planes[0]?.userData?.video
       if (video && video.paused) {
         try {
           await video.play()
         } catch (e) {
-          // Show a prompt or overlay here if needed
           alert('Please tap again to enable video playback.')
         }
       }
@@ -542,10 +601,13 @@ document.addEventListener('click', async (event) => {
   }
 
   const targetIndex = parseInt(roomType) - 1
-  await safeTransition(leftScreen, targetIndex)
-  await safeTransition(rightScreen, targetIndex)
-  await safeTransition(frontScreen, targetIndex)
-  await safeTransition(backScreen, targetIndex)
+  // Load all screens in parallel
+  await Promise.all([
+    safeTransition(leftScreen, targetIndex),
+    safeTransition(rightScreen, targetIndex),
+    safeTransition(frontScreen, targetIndex),
+    safeTransition(backScreen, targetIndex),
+  ])
 })
 
 animate()
