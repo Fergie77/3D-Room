@@ -41,6 +41,8 @@ controls.enablePan = true
 //controls.enableZoom = true
 controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1)) // Look 1 unit in front of camera
 controls.update()
+controls.rotateSpeed = -1 // Invert rotation direction
+controls.panSpeed = -1 // Invert panning direction
 
 // Add loading overlay to DOM (CSS spinner)
 const loadingOverlay = document.createElement('div')
