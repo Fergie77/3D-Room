@@ -1,7 +1,5 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-//import { ReflectorForSSRPass } from 'three/examples/jsm/objects/ReflectorForSSRPass.js'
-//import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 
@@ -34,7 +32,7 @@ const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.enablePan = true
-controls.enableZoom = true
+//controls.enableZoom = true
 controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1)) // Look 1 unit in front of camera
 controls.update()
 
@@ -308,16 +306,20 @@ scene.add(rightWall)
 scene.add(frontWall)
 
 // Add lighting
-// const ambientLight = new THREE.AmbientLight(0xffffff, 0)
-// scene.add(ambientLight)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3) // Add subtle ambient light
+scene.add(ambientLight)
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-directionalLight.position.set(0, 5, 5)
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2) // Increased intensity
+directionalLight.position.set(0, 8, 2) // Moved higher and more forward
 directionalLight.castShadow = true
-directionalLight.shadow.mapSize.width = 1024
-directionalLight.shadow.mapSize.height = 1024
+directionalLight.shadow.mapSize.width = 2048 // Increased shadow resolution
+directionalLight.shadow.mapSize.height = 2048
 directionalLight.shadow.camera.near = 0.5
-directionalLight.shadow.camera.far = 20
+directionalLight.shadow.camera.far = 30 // Increased far plane
+directionalLight.shadow.camera.left = -10 // Adjusted shadow camera frustum
+directionalLight.shadow.camera.right = 10
+directionalLight.shadow.camera.top = 10
+directionalLight.shadow.camera.bottom = -10
 scene.add(directionalLight)
 
 // --- Cube Camera for dynamic reflection ---
@@ -374,39 +376,76 @@ floor.receiveShadow = true
 scene.add(floor)
 
 // Add a ceiling
-const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth)
+const ceilingRadius = roomWidth / 2 + 0.1 // Radius of the curved ceiling
+//const ceilingHeight = wallHeight / 2 // Height of the curve
+const ceilingSegments = 32 // Number of segments for smooth curve
+const ceilingGeometry = new THREE.CylinderGeometry(
+  ceilingRadius,
+  ceilingRadius,
+  roomDepth + 0.1,
+  ceilingSegments,
+  1,
+  true, // openEnded
+  Math.PI, // thetaStart
+  Math.PI // thetaLength
+)
 const ceilingMaterial = new THREE.MeshStandardMaterial({
-  color: 0x000000,
+  color: 0x333333,
   side: THREE.DoubleSide,
+  roughness: 0.3,
+  metalness: 0.8,
+  envMap: cubeRenderTarget.texture,
+  envMapIntensity: 1.2,
 })
 const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial)
 ceiling.rotation.x = Math.PI / 2
+ceiling.rotation.z = Math.PI
+ceiling.rotation.y = Math.PI / 2
 ceiling.position.y = wallHeight / 2
-ceiling.position.z = -roomDepth / 2
+ceiling.position.z = -roomDepth / 2 - 0.05
 ceiling.receiveShadow = true
 scene.add(ceiling)
 
-// // Add a sphere
-// const sphereGeometry = new THREE.SphereGeometry(0.1, 32, 32)
-// const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff })
-// const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
-// sphere.position.set(-0.8, -wallHeight / 2 + 0.3, -roomDepth / 1.5)
-// sphere.castShadow = true
-// sphere.receiveShadow = true
-// scene.add(sphere)
+// Add a circle to fill the black gap above the front wall
+const archCircleGeometry = new THREE.CircleGeometry(
+  ceilingRadius,
+  ceilingSegments
+)
+const archCircleMaterial = new THREE.MeshStandardMaterial({
+  color: 0x333333,
+  side: THREE.DoubleSide,
+  roughness: 0.3,
+  metalness: 0.8,
+  envMap: cubeRenderTarget.texture,
+  envMapIntensity: 1.2,
+})
+const archCircle = new THREE.Mesh(archCircleGeometry, archCircleMaterial)
+archCircle.position.set(0, wallHeight / 2, -roomDepth - 0.05)
+archCircle.rotation.x = -Math.PI / 1 // Face into the room
+scene.add(archCircle)
 
-// // Add a cube
-// const cubeGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
-// const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff })
-// const cube = new THREE.Mesh(cubeGeometry, cubeMaterial)
-// cube.position.set(0.8, -wallHeight / 2 + 0.25, -roomDepth / 1.5)
-// cube.castShadow = true
-// cube.receiveShadow = true
-// scene.add(cube)
+// --- Duplicate front wall and arch circle to the back of the room ---
+const backWallVideos = frontWallVideos // Use same videos as front wall, or change if desired
+const backWall = new VideoScreen(
+  roomWidth,
+  wallHeight,
+  [0, 0, 0], // Back of the room
+  [0, Math.PI, 0], // Face into the room
+  backWallVideos
+).getMesh()
+scene.add(backWall)
+
+const backArchCircle = new THREE.Mesh(
+  archCircleGeometry,
+  archCircleMaterial.clone()
+)
+backArchCircle.position.set(0, wallHeight / 2, 0 + 0.05)
+backArchCircle.rotation.x = -Math.PI / 1 // Face into the room
+scene.add(backArchCircle)
 
 // --- OBJ + MTL Model Loader Example ---
 const mtlLoader = new MTLLoader()
-mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
+mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
 
 // Set the glossiness (roughness) value for the bike material
 const bikeGlossiness = 0.1 // Lower = glossier, 0 = perfect mirror, 1 = matte
@@ -416,12 +455,12 @@ mtlLoader.load('Flying_Flea.mtl', (materials) => {
 
   const objLoader = new OBJLoader()
   objLoader.setMaterials(materials)
-  objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea/')
+  objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
 
   objLoader.load('Flying_Flea.obj', (object) => {
-    object.position.set(0, -(wallHeight / 2 - 0.5), -roomDepth / 2 - 2)
-    object.rotation.set(0, 1.5, 0)
-    object.scale.set(0.8, 0.8, 0.8)
+    object.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 - 2)
+    object.rotation.set(0, 1.55, 0)
+    object.scale.set(1.4, 1.4, 1.4)
     // Enable shadows for all meshes in the model
     object.traverse((child) => {
       if (child.isMesh) {
@@ -458,10 +497,12 @@ function animate(time) {
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
+  const backScreen = backWall.userData.videoScreen
 
   if (leftScreen) leftScreen.update(deltaTime)
   if (rightScreen) rightScreen.update(deltaTime)
   if (frontScreen) frontScreen.update(deltaTime)
+  if (backScreen) backScreen.update(deltaTime)
 
   // Update cube camera for dynamic reflection
   floor.visible = false
@@ -481,6 +522,7 @@ document.addEventListener('click', async (event) => {
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
+  const backScreen = backWall.userData.videoScreen
 
   // Helper to safely transition a screen
   async function safeTransition(screen, targetIndex) {
@@ -503,6 +545,7 @@ document.addEventListener('click', async (event) => {
   await safeTransition(leftScreen, targetIndex)
   await safeTransition(rightScreen, targetIndex)
   await safeTransition(frontScreen, targetIndex)
+  await safeTransition(backScreen, targetIndex)
 })
 
 animate()
