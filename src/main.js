@@ -1,3 +1,4 @@
+import { gsap } from 'gsap'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
@@ -52,7 +53,7 @@ loadingOverlay.style.left = '0'
 loadingOverlay.style.width = '100vw'
 loadingOverlay.style.height = '100vh'
 loadingOverlay.style.background = 'rgba(0,0,0,0.7)'
-loadingOverlay.style.display = 'none'
+loadingOverlay.style.display = 'flex'
 loadingOverlay.style.justifyContent = 'center'
 loadingOverlay.style.alignItems = 'center'
 loadingOverlay.style.zIndex = '1000'
@@ -73,16 +74,30 @@ spinnerStyle.innerHTML = `
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}`
+}
+`
 document.head.appendChild(spinnerStyle)
 
 // Global loading counter for all video screens
 window.activeVideoLoads = 0
 function showGlobalLoading() {
-  loadingOverlay.style.display = 'flex'
+  gsap.to(loadingOverlay, {
+    opacity: 1,
+    duration: 0.5,
+    pointerEvents: 'auto',
+    onStart: () => {
+      loadingOverlay.style.pointerEvents = 'auto'
+    },
+  })
 }
 function hideGlobalLoading() {
-  loadingOverlay.style.display = 'none'
+  gsap.to(loadingOverlay, {
+    opacity: 0,
+    duration: 0.5,
+    onComplete: () => {
+      loadingOverlay.style.pointerEvents = 'none'
+    },
+  })
 }
 
 // VideoScreen class to handle multiple videos and transitions
@@ -140,11 +155,13 @@ class VideoScreen {
 
       // Wait for video to be loaded
       video.addEventListener('loadeddata', () => {
-        if (this.isLoading) {
-          window.activeVideoLoads--
-          if (window.activeVideoLoads === 0) hideGlobalLoading()
-          this.isLoading = false
-        }
+        setTimeout(() => {
+          if (this.isLoading) {
+            window.activeVideoLoads--
+            if (window.activeVideoLoads === 0) hideGlobalLoading()
+            this.isLoading = false
+          }
+        }, 2000)
         const texture = new THREE.VideoTexture(video)
         texture.encoding = THREE.sRGBEncoding
 
