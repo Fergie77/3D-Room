@@ -396,18 +396,21 @@ const leftWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4', // Add your second video URL here
 ]
 
 const rightWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4', // Add your second video URL here
 ]
 
 const frontWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/CENTRE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4', // Add your second video URL here
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/CENTRE.mp4', // Add your second video URL here
 ]
 
 const leftWall = new VideoScreen(
