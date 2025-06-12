@@ -20,7 +20,7 @@ window.activeVideoLoads = 0
 const paragraphs = {
   0: 'Taking over Aures London, we used 270-degree screens to craft a truly immersive experience - capturing the essence of the urban landscapes where the Flying Flea thrives as a modern city bike and personifying the feeling of driving it. Visually articulating a feeling of lightness, of being in a flow state with a new generation of electric motorcycle.',
   1: "Our night began by transporting guests around the world, plunging them into the core brand cities of London, LA, Delhi and Tokyo. Full room projections of nuanced and well researched footage built a visually rich tapestry of life in the city. Busy streets, Chinatown, the bustle of Soho and independent cafes in London while the dimly lit backstreet izakayas contrasted the overwhelming neon signage of Tokyo's Akihabara district.",
-  2: 'As the night evolves so did the visuals, perfectly capturing the electrified essence of the Flying Flea. Pulsing animations incorporated design cues from the bike itself and subtly signal brand language. This wasn’t just a product reveal - it was a sensory experience, blending visuals and sound to create a festival-like atmosphere, with the Flying Flea as the headline act.',
+  2: 'As the night evolves so did the visuals, perfectly capturing the electrified essence of the Flying Flea. Pulsing animations incorporated design cues from the bike itself and subtly signal brand language. This wasn't just a product reveal - it was a sensory experience, blending visuals and sound to create a festival-like atmosphere, with the Flying Flea as the headline act.',
   3: 'We combined Houdini CGI, 2D animation, and Touch Designer to create over 100 original animated assets for an ever-evolving display that matched the energy of the evening. From the calm, exploratory moments to the exhilarating, high-energy sequences, every visual transition was carefully choreographed to enhance the overall experience.',
 }
 const cardController = new CardParagraphController(paragraphs)
@@ -52,7 +52,12 @@ const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.outputEncoding = THREE.sRGBEncoding
-document.body.appendChild(renderer.domElement)
+const mainWrapper = document.querySelector('.main-wrapper')
+if (!mainWrapper) {
+  console.error('Could not find element with class "main-wrapper"')
+} else {
+  mainWrapper.appendChild(renderer.domElement)
+}
 
 // Add OrbitControls for mouse interaction
 const controls = new OrbitControls(camera, renderer.domElement)
