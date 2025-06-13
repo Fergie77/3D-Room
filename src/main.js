@@ -210,14 +210,16 @@ const initialState = cameraStates[0]
 camera.position.copy(initialState.position)
 camera.rotation.copy(initialState.rotation)
 
-document.addEventListener('click', async (event) => {
-  const roomElement = event.target.closest('[data-room]')
-  if (!roomElement) return
-  const roomType = roomElement.getAttribute('data-room')
+// Track current room state
+let currentRoomIndex = 0
+
+// Function to handle room transitions
+async function transitionToRoom(targetIndex) {
   const leftScreen = leftWall.userData.videoScreen
   const rightScreen = rightWall.userData.videoScreen
   const frontScreen = frontWall.userData.videoScreen
   const backScreen = backWall.userData.videoScreen
+
   async function safeGoTo(screen, targetIndex) {
     if (screen && screen.currentVideoIndex !== targetIndex) {
       await screen.goToVideo(targetIndex)
@@ -231,18 +233,38 @@ document.addEventListener('click', async (event) => {
       }
     }
   }
-  const targetIndex = parseInt(roomType) - 1
+
   if (cameraStates[targetIndex]) {
     animateCameraTo(cameraStates[targetIndex], camera, controls)
   }
+
   await Promise.all([
     safeGoTo(leftScreen, targetIndex),
     safeGoTo(rightScreen, targetIndex),
     safeGoTo(frontScreen, targetIndex),
     safeGoTo(backScreen, targetIndex),
   ])
+
   // Update the card paragraph
   cardController.setRoom(targetIndex)
+  currentRoomIndex = targetIndex
+}
+
+// Handle pulse-icon clicks for mobile cycling
+document.querySelector('.pulse-icon')?.addEventListener('click', () => {
+  const nextRoomIndex =
+    (currentRoomIndex + 1) % Object.keys(cameraStates).length
+  transitionToRoom(nextRoomIndex)
+})
+
+// Handle data-room clicks
+document.addEventListener('click', async (event) => {
+  const roomElement = event.target.closest('[data-room]')
+  if (!roomElement) return
+
+  const roomType = roomElement.getAttribute('data-room')
+  const targetIndex = parseInt(roomType) - 1
+  transitionToRoom(targetIndex)
 })
 
 window.addEventListener('resize', () => {
