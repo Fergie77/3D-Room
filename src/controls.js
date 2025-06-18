@@ -3,7 +3,7 @@ export function createControls(camera, renderer) {
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
-  controls.enablePan = true
+  controls.enablePan = false
   controls.enableZoom = false
   controls.rotateSpeed = -0.5
   controls.panSpeed = -1
