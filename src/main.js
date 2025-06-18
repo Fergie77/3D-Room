@@ -125,21 +125,21 @@ setupLighting(scene)
 // --- Video Screens ---
 const leftWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
 ]
 const rightWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/SIDE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/SIDE.mp4',
 ]
 const frontWallVideos = [
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_1/CENTRE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4',
-  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
   'https://tg-3d-room.netlify.app/Screens/Screen_Set_4/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_2/CENTRE.mp4',
+  'https://tg-3d-room.netlify.app/Screens/Screen_Set_3/CENTRE.mp4',
 ]
 const leftWall = new VideoScreen(
   roomDepth,
