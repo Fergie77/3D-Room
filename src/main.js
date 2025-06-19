@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 // Local imports
 import { animateCameraTo } from './cameraAnimation.js'
+import { initCameraHelperUI } from './CameraHelperUI.js'
 import { cameraStates } from './cameraStates.js'
 import { CardParagraphController } from './cardParagraphController.js'
 import { createCeiling, createArchCircle } from './ceiling.js'
@@ -11,7 +12,6 @@ import { createFloor } from './floor.js'
 import { setupLighting } from './lighting.js'
 import { loadBikeModel } from './modelLoader.js'
 import { VideoScreen } from './videoScreen.js'
-import { initCameraHelperUI } from './CameraHelperUI.js'
 import './loadingOverlay.js'
 
 // Initialize video loading counter
