@@ -52,7 +52,7 @@ export const initCameraHelperUI = (controls) => {
     clearTimeout(inactivityTimer)
     inactivityTimer = setTimeout(() => {
       showUI()
-    }, 3000) // 3 seconds
+    }, 6000) // 3 seconds
   }
 
   // Reset inactivity timer on any user interaction
