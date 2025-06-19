@@ -11,6 +11,7 @@ import { createFloor } from './floor.js'
 import { setupLighting } from './lighting.js'
 import { loadBikeModel } from './modelLoader.js'
 import { VideoScreen } from './videoScreen.js'
+import { initCameraHelperUI } from './CameraHelperUI.js'
 import './loadingOverlay.js'
 
 // Initialize video loading counter
@@ -69,6 +70,9 @@ controls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1))
 controls.update()
 controls.rotateSpeed = -0.5
 controls.panSpeed = -1
+
+// Initialize camera helper UI
+const cleanupCameraHelper = initCameraHelperUI(controls)
 
 // --- Cube Camera for dynamic reflection ---
 const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
