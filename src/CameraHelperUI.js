@@ -20,7 +20,7 @@ export const initCameraHelperUI = (controls) => {
     if (hasUserRotated || isUIVisible) return
 
     isUIVisible = true
-    gsap.set(uiWrapper, { display: 'block' })
+    gsap.set(uiWrapper, { display: 'flex' })
     gsap.to(uiWrapper, {
       opacity: 1,
       duration: 0.5,
