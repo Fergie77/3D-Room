@@ -26,6 +26,10 @@ const paragraphs = {
 }
 const cardController = new CardParagraphController(paragraphs)
 
+window.Webflow.destroy()
+window.Webflow.ready()
+window.Webflow.require('ix2')?.init()
+
 // Create scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x000000)
