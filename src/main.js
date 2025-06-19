@@ -72,7 +72,7 @@ controls.rotateSpeed = -0.5
 controls.panSpeed = -1
 
 // Initialize camera helper UI
-const cleanupCameraHelper = initCameraHelperUI(controls)
+initCameraHelperUI(controls)
 
 // --- Cube Camera for dynamic reflection ---
 const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
