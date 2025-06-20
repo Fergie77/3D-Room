@@ -11,6 +11,7 @@ export const initCameraHelperUI = (controls) => {
   let inactivityTimer = null
   let hasUserRotated = false
   let isUIVisible = false
+  let hideUITimer = null
 
   // Set initial state - hidden
   gsap.set(uiWrapper, { opacity: 0, display: 'none' })
@@ -20,12 +21,19 @@ export const initCameraHelperUI = (controls) => {
     if (hasUserRotated || isUIVisible) return
 
     isUIVisible = true
-    gsap.set(uiWrapper, { display: 'flex' })
+    gsap.set(uiWrapper, { display: 'block' })
     gsap.to(uiWrapper, {
       opacity: 1,
       duration: 0.5,
       ease: 'power2.out',
     })
+
+    // Set timer to hide UI after 3 more seconds of inactivity
+    hideUITimer = setTimeout(() => {
+      if (isUIVisible && !hasUserRotated) {
+        hideUIPermanently()
+      }
+    }, 3000)
   }
 
   // Function to hide the UI permanently
@@ -45,6 +53,21 @@ export const initCameraHelperUI = (controls) => {
     })
   }
 
+  // Function to hide the UI temporarily (for the second timer)
+  const hideUITemporarily = () => {
+    if (hasUserRotated) return
+
+    isUIVisible = false
+    gsap.to(uiWrapper, {
+      opacity: 0,
+      duration: 0.3,
+      ease: 'power2.in',
+      onComplete: () => {
+        gsap.set(uiWrapper, { display: 'none' })
+      },
+    })
+  }
+
   // Start inactivity timer
   const startInactivityTimer = () => {
     if (hasUserRotated) return
@@ -52,7 +75,7 @@ export const initCameraHelperUI = (controls) => {
     clearTimeout(inactivityTimer)
     inactivityTimer = setTimeout(() => {
       showUI()
-    }, 4000) // 3 seconds
+    }, 3000) // 3 seconds
   }
 
   // Reset inactivity timer on any user interaction
@@ -60,6 +83,13 @@ export const initCameraHelperUI = (controls) => {
     if (hasUserRotated) return
 
     clearTimeout(inactivityTimer)
+    clearTimeout(hideUITimer)
+
+    // If UI is currently visible, hide it immediately
+    if (isUIVisible) {
+      hideUITemporarily()
+    }
+
     startInactivityTimer()
   }
 
@@ -108,6 +138,7 @@ export const initCameraHelperUI = (controls) => {
   // Return cleanup function
   return () => {
     clearTimeout(inactivityTimer)
+    clearTimeout(hideUITimer)
     events.forEach((event) => {
       document.removeEventListener(event, resetInactivityTimer)
     })
