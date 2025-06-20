@@ -21,7 +21,7 @@ export const initCameraHelperUI = (controls) => {
     if (hasUserRotated || isUIVisible) return
 
     isUIVisible = true
-    gsap.set(uiWrapper, { display: 'block' })
+    gsap.set(uiWrapper, { display: 'flex' })
     gsap.to(uiWrapper, {
       opacity: 1,
       duration: 0.5,
@@ -60,7 +60,7 @@ export const initCameraHelperUI = (controls) => {
     isUIVisible = false
     gsap.to(uiWrapper, {
       opacity: 0,
-      duration: 0.3,
+      duration: 1,
       ease: 'power2.in',
       onComplete: () => {
         gsap.set(uiWrapper, { display: 'none' })
@@ -75,7 +75,7 @@ export const initCameraHelperUI = (controls) => {
     clearTimeout(inactivityTimer)
     inactivityTimer = setTimeout(() => {
       showUI()
-    }, 3000) // 3 seconds
+    }, 4000) // 3 seconds
   }
 
   // Reset inactivity timer on any user interaction
@@ -88,9 +88,10 @@ export const initCameraHelperUI = (controls) => {
     // If UI is currently visible, hide it immediately
     if (isUIVisible) {
       hideUITemporarily()
+    } else {
+      // Only restart the timer if UI wasn't visible
+      startInactivityTimer()
     }
-
-    startInactivityTimer()
   }
 
   // Listen for camera rotation events
