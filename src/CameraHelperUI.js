@@ -33,7 +33,7 @@ export const initCameraHelperUI = (controls) => {
       if (isUIVisible && !hasUserRotated) {
         hideUIPermanently()
       }
-    }, 3000)
+    }, 6000)
   }
 
   // Function to hide the UI permanently
@@ -75,7 +75,7 @@ export const initCameraHelperUI = (controls) => {
     clearTimeout(inactivityTimer)
     inactivityTimer = setTimeout(() => {
       showUI()
-    }, 6000) // 6 seconds
+    }, 3000) // 3 seconds
   }
 
   // Reset inactivity timer on any user interaction
