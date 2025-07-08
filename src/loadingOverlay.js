@@ -12,7 +12,7 @@ loadingOverlay.style.alignItems = 'center'
 loadingOverlay.style.zIndex = '1000'
 loadingOverlay.style.flexDirection = 'column'
 loadingOverlay.innerHTML = `<div class="spinner"></div>`
-document.body.appendChild(loadingOverlay)
+document.querySelector('.main-wrapper').appendChild(loadingOverlay)
 const spinnerStyle = document.createElement('style')
 spinnerStyle.innerHTML = `
 .spinner {
