@@ -1,6 +1,5 @@
 import * as THREE from 'three'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 export function loadBikeModel(
   scene,
@@ -9,14 +8,11 @@ export function loadBikeModel(
   roomDepth,
   bikeGlossiness
 ) {
-  const mtlLoader = new MTLLoader()
-  mtlLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
-  mtlLoader.load('Flying_Flea.mtl', (materials) => {
-    materials.preload()
-    const objLoader = new OBJLoader()
-    objLoader.setMaterials(materials)
-    objLoader.setPath('https://tg-3d-room.netlify.app/FlyingFlea2/')
-    objLoader.load('Flying_Flea.obj', (object) => {
+  const loader = new GLTFLoader()
+  loader.load(
+    'https://tg-3d-room.netlify.app/FlyingFlea2/Flying_Flea-compressed.glb',
+    (gltf) => {
+      const object = gltf.scene
       object.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 - 2)
       object.rotation.set(0, 1.55, 0)
       object.scale.set(1.4, 1.4, 1.4)
@@ -34,11 +30,13 @@ export function loadBikeModel(
         }
       })
       scene.add(object)
-      // Add a mirrored bike on the other side of the room
+      // Mirrored bike on the other side of the room
       const bike2 = object.clone()
       bike2.position.set(0, -(wallHeight / 2 - 0.41), -roomDepth / 2 + 2)
       bike2.rotation.set(0, -1.55, 0)
       scene.add(bike2)
-    })
-  })
+    },
+    undefined,
+    (err) => console.error('Failed to load bike GLB:', err)
+  )
 }

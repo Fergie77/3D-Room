@@ -21,11 +21,14 @@ const isMobile =
 // devices like Pro iPhones — no visible quality drop, but ~2x fewer pixels
 // to shade per frame on those phones).
 const pixelRatioCap = isMobile ? 2 : window.devicePixelRatio
-// Only update the reflection cubemap every Nth frame on mobile. The cube
-// camera renders the scene 6 times per update; throttling to every 4
-// frames cuts that overhead by 4x. Lag in reflections is ~67ms — not
-// perceptible in normal use.
-const cubeUpdateInterval = isMobile ? 4 : 1
+// Reflection cubemap throttled to every 8th frame on mobile. The cube
+// camera renders the scene 6 times per update; the floor and bike have
+// roughness > 0 so the inherent material blur masks the lag.
+const cubeUpdateInterval = isMobile ? 8 : 1
+// Cubemap resolution: 256² on mobile (1/4 the pixels per face), 512² on
+// desktop. Floor and bike reflections become slightly softer on mobile,
+// blended into material roughness — not consciously noticeable.
+const cubeMapResolution = isMobile ? 256 : 512
 
 // Initialize video loading counter
 window.activeVideoLoads = 0
@@ -92,7 +95,7 @@ controls.panSpeed = -1
 initCameraHelperUI(controls)
 
 // --- Cube Camera for dynamic reflection ---
-const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
+const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(cubeMapResolution, {
   format: THREE.RGBAFormat,
   generateMipmaps: true,
   minFilter: THREE.LinearMipmapLinearFilter,
