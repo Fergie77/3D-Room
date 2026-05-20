@@ -14,6 +14,19 @@ import { loadBikeModel } from './modelLoader.js'
 import { VideoScreen } from './videoScreen.js'
 import './loadingOverlay.js'
 
+// Mobile detection: touch device or small viewport.
+const isMobile =
+  !window.matchMedia('(hover: hover)').matches || window.innerWidth < 900
+// Cap the render resolution at DPR 2 on mobile (only kicks in on DPR-3
+// devices like Pro iPhones — no visible quality drop, but ~2x fewer pixels
+// to shade per frame on those phones).
+const pixelRatioCap = isMobile ? 2 : window.devicePixelRatio
+// Only update the reflection cubemap every Nth frame on mobile. The cube
+// camera renders the scene 6 times per update; throttling to every 4
+// frames cuts that overhead by 4x. Lag in reflections is ~67ms — not
+// perceptible in normal use.
+const cubeUpdateInterval = isMobile ? 4 : 1
+
 // Initialize video loading counter
 window.activeVideoLoads = 0
 
@@ -55,7 +68,7 @@ if (window.innerWidth < 700) {
 // Create renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.setPixelRatio(window.devicePixelRatio)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioCap))
 renderer.outputEncoding = THREE.sRGBEncoding
 const mainWrapper = document.querySelector('.main-wrapper')
 if (!mainWrapper) {
@@ -193,6 +206,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
 // Animation loop
 let lastTime = 0
+let frameCount = 0
 function animate(time) {
   const deltaTime = (time - lastTime) / 1000
   lastTime = time
@@ -206,10 +220,14 @@ function animate(time) {
   if (rightScreen) rightScreen.update(deltaTime)
   if (frontScreen) frontScreen.update(deltaTime)
   if (backScreen) backScreen.update(deltaTime)
-  floor.visible = false
-  cubeCamera.position.copy(floor.position)
-  cubeCamera.update(renderer, scene)
-  floor.visible = true
+  // Cubemap reflections — full-rate on desktop, throttled on mobile.
+  if (frameCount % cubeUpdateInterval === 0) {
+    floor.visible = false
+    cubeCamera.position.copy(floor.position)
+    cubeCamera.update(renderer, scene)
+    floor.visible = true
+  }
+  frameCount++
   renderer.render(scene, camera)
 }
 
@@ -279,7 +297,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioCap))
 })
 
 animate()
